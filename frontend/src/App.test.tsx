@@ -32,9 +32,10 @@ describe("App", () => {
       configurable: true,
       value: vi.fn(),
     });
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (url: string) => {
+      vi.fn(async (url: string, init?: RequestInit) => {
         if (url === "/api/templates") {
           return new Response(
             JSON.stringify([{ id: "transformer_short_circuit_test_record", name: "变压器短路承受能力试验现场记录" }]),
@@ -42,6 +43,12 @@ describe("App", () => {
         }
         if (url === "/api/recognize") {
           return new Response(JSON.stringify(recognition));
+        }
+        if (url === "/api/export") {
+          const body = JSON.parse(String(init?.body));
+          expect(body.fields.centerNumber.value).toBe("B260113");
+          expect(body.fields.centerNumber.edited).toBe(true);
+          return new Response(new Blob(["xlsx"]));
         }
         return new Response(null, { status: 404 });
       }),
@@ -62,5 +69,19 @@ describe("App", () => {
 
     expect(screen.getByText("试验前电抗测量")).toBeInTheDocument();
     expect(screen.getByDisplayValue("281.25")).toBeInTheDocument();
+  });
+
+  it("exports edited recognition data", async () => {
+    render(<App />);
+    const user = userEvent.setup();
+    const file = new File(["image"], "sample.png", { type: "image/png" });
+
+    await user.upload(screen.getByLabelText("上传表单照片"), file);
+    await user.click(screen.getByRole("button", { name: "开始识别" }));
+    await user.clear(await screen.findByLabelText("中心编号"));
+    await user.type(screen.getByLabelText("中心编号"), "B260113");
+    await user.click(screen.getByRole("button", { name: "导出 Excel" }));
+
+    expect(await screen.findByText("Excel 已生成")).toBeInTheDocument();
   });
 });

@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { fetchTemplates, recognizeDocument } from "./api";
+import { exportWorkbook, fetchTemplates, recognizeDocument } from "./api";
 import type { FieldValue, RecognitionResult, TemplateInfo } from "./types";
 
 type Tab = "fields" | "tables" | "raw";
@@ -72,6 +72,8 @@ export default function App() {
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
+  const canExport = useMemo(() => result !== null && !busy, [busy, result]);
+
   async function handleRecognize() {
     if (!file) {
       setStatus("请先选择图片");
@@ -91,6 +93,28 @@ export default function App() {
     }
   }
 
+  async function handleExport() {
+    if (!result) {
+      return;
+    }
+    setBusy(true);
+    setStatus("正在生成 Excel");
+    try {
+      const blob = await exportWorkbook(result);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "recognition-result.xlsx";
+      link.click();
+      URL.revokeObjectURL(url);
+      setStatus("Excel 已生成");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Excel 导出失败");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <main className="app-shell">
       <header className="topbar">
@@ -98,7 +122,7 @@ export default function App() {
           <h1>PaddleOCR 表格识别</h1>
           <p>上传现场记录照片，校对识别结果并导出 Excel。</p>
         </div>
-        <button type="button" disabled>
+        <button type="button" disabled={!canExport} onClick={handleExport}>
           导出 Excel
         </button>
       </header>
@@ -159,9 +183,13 @@ export default function App() {
           {result && activeTab === "fields" && (
             <div className="field-grid">
               {Object.entries(result.fields).map(([fieldId, field]) => (
-                <label key={fieldId}>
+                <label key={fieldId} htmlFor={`field-${fieldId}`}>
                   <span>{field.label}</span>
-                  <input value={field.value} onChange={(event) => setResult(updateField(result, fieldId, event.target.value))} />
+                  <input
+                    id={`field-${fieldId}`}
+                    value={field.value}
+                    onChange={(event) => setResult(updateField(result, fieldId, event.target.value))}
+                  />
                 </label>
               ))}
             </div>
