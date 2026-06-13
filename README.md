@@ -58,3 +58,7 @@ npm run build
 ## Notes
 
 PaddleOCR model loading can take time on the first recognition request. Automated backend tests use a fake OCR engine so tests do not require model downloads.
+
+## Manual Verification
+
+- 2026-06-14: Uploaded the sample transformer test record photo locally, reviewed recognized fields, edited `中心编号` to `B260113`, exported Excel, and confirmed the edited value appeared in workbook sheets `识别结果` and `关键字段`.

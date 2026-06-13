@@ -9,4 +9,5 @@ build/
 node_modules/
 frontend/dist/
 backend/uv.lock
+.playwright-mcp/
 *.xlsx
