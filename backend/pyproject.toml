@@ -1,0 +1,25 @@
+[project]
+name = "paddleocr-web-excel-backend"
+version = "0.1.0"
+description = "Local PaddleOCR web backend for recognizing transformer test record photos and exporting Excel workbooks."
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi",
+  "uvicorn[standard]",
+  "python-multipart",
+  "pydantic",
+  "pillow",
+  "openpyxl",
+  "opencv-python-headless",
+  "paddleocr"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "httpx"
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
