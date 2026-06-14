@@ -6,7 +6,7 @@ from PIL import Image, UnidentifiedImageError
 
 from app.errors import ApiError, api_error_handler
 from app.exporter import build_workbook
-from app.layout_exporter import build_layout_workbook
+from app.form_exporter import build_form_workbook
 from app.models import RecognitionResult, TemplateInfo
 from app.ocr import OcrEngine, get_ocr_engine
 from app.templates import DEFAULT_TEMPLATE_ID, get_template, template_infos
@@ -57,6 +57,26 @@ def _image_size(image_bytes: bytes) -> tuple[int, int]:
         raise ApiError(400, "image_decode_failed", "Image cannot be decoded.", str(exc)) from exc
 
 
+def _recognize_result(image_bytes: bytes, filename: str, template_id: str, width: int, height: int) -> RecognitionResult:
+    try:
+        template = get_template(template_id)
+    except KeyError as exc:
+        raise ApiError(400, "unknown_template", "Template is not supported.", template_id) from exc
+
+    try:
+        engine = resolve_engine()
+        raw_lines = engine.recognize(image_bytes)
+    except Exception as exc:
+        raise ApiError(500, "ocr_failed", "OCR recognition failed.", str(exc)) from exc
+
+    return template.extract(
+        raw_lines=raw_lines,
+        filename=filename,
+        width=width,
+        height=height,
+    )
+
+
 @app.post("/api/recognize", response_model=RecognitionResult)
 async def recognize(
     file: UploadFile = File(...),
@@ -70,20 +90,10 @@ async def recognize(
 
     width, height = _image_size(image_bytes)
 
-    try:
-        template = get_template(templateId)
-    except KeyError as exc:
-        raise ApiError(400, "unknown_template", "Template is not supported.", templateId) from exc
-
-    try:
-        engine = resolve_engine()
-        raw_lines = engine.recognize(image_bytes)
-    except Exception as exc:
-        raise ApiError(500, "ocr_failed", "OCR recognition failed.", str(exc)) from exc
-
-    return template.extract(
-        raw_lines=raw_lines,
+    return _recognize_result(
+        image_bytes=image_bytes,
         filename=file.filename or "uploaded-image",
+        template_id=templateId,
         width=width,
         height=height,
     )
@@ -103,8 +113,11 @@ def export_excel(result: RecognitionResult) -> Response:
     )
 
 
-@app.post("/api/export-layout")
-async def export_layout_excel(file: UploadFile = File(...)) -> Response:
+@app.post("/api/export-form")
+async def export_form_excel(
+    file: UploadFile = File(...),
+    templateId: str = Form(DEFAULT_TEMPLATE_ID),
+) -> Response:
     _ensure_supported_image(file)
 
     image_bytes = await file.read()
@@ -113,24 +126,21 @@ async def export_layout_excel(file: UploadFile = File(...)) -> Response:
 
     width, height = _image_size(image_bytes)
 
-    try:
-        engine = resolve_engine()
-        raw_lines = engine.recognize(image_bytes)
-    except Exception as exc:
-        raise ApiError(500, "ocr_failed", "OCR recognition failed.", str(exc)) from exc
+    result = _recognize_result(
+        image_bytes=image_bytes,
+        filename=file.filename or "uploaded-image",
+        template_id=templateId,
+        width=width,
+        height=height,
+    )
 
     try:
-        content = build_layout_workbook(
-            raw_lines=raw_lines,
-            filename=file.filename or "uploaded-image",
-            image_width=width,
-            image_height=height,
-        )
+        content = build_form_workbook(result)
     except Exception as exc:
         raise ApiError(500, "export_failed", "Excel generation failed.", str(exc)) from exc
 
     return Response(
         content=content,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": 'attachment; filename="ocr-layout-result.xlsx"'},
+        headers={"Content-Disposition": 'attachment; filename="transformer-test-record.xlsx"'},
     )

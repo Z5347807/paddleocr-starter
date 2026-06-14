@@ -41,11 +41,11 @@ export async function exportWorkbook(result: RecognitionResult): Promise<Blob> {
   return response.blob();
 }
 
-export async function exportLayoutWorkbook(file: File): Promise<Blob> {
+export async function exportFormWorkbook(file: File): Promise<Blob> {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch("/api/export-layout", {
+  const response = await fetch("/api/export-form", {
     method: "POST",
     body: formData,
   });

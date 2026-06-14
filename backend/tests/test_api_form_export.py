@@ -18,18 +18,38 @@ class FakeEngine:
                 box=[[80.0, 40.0], [180.0, 40.0], [180.0, 64.0], [80.0, 64.0]],
             ),
             RawOcrLine(
+                text="委托单位",
+                confidence=0.92,
+                box=[[20.0, 80.0], [80.0, 80.0], [80.0, 104.0], [20.0, 104.0]],
+            ),
+            RawOcrLine(
+                text="山东鲁能泰山电力设备有限公司",
+                confidence=0.92,
+                box=[[120.0, 80.0], [260.0, 80.0], [260.0, 104.0], [120.0, 104.0]],
+            ),
+            RawOcrLine(
+                text="序号",
+                confidence=0.91,
+                box=[[20.0, 120.0], [80.0, 120.0], [80.0, 144.0], [20.0, 144.0]],
+            ),
+            RawOcrLine(
+                text="LTD-260-0032",
+                confidence=0.91,
+                box=[[120.0, 120.0], [260.0, 120.0], [260.0, 144.0], [120.0, 144.0]],
+            ),
+            RawOcrLine(
                 text="281.25",
                 confidence=0.89,
-                box=[[80.0, 160.0], [140.0, 160.0], [140.0, 184.0], [80.0, 184.0]],
+                box=[[240.0, 632.0], [300.0, 632.0], [300.0, 656.0], [240.0, 656.0]],
             ),
         ]
 
 
-def test_export_layout_recognizes_image_and_returns_xlsx() -> None:
+def test_export_form_rejects_invalid_image() -> None:
     app.dependency_overrides[get_engine] = lambda: FakeEngine()
     try:
         response = client.post(
-            "/api/export-layout",
+            "/api/export-form",
             files={"file": ("sample.png", b"not-an-image", "image/png")},
         )
     finally:
@@ -38,14 +58,14 @@ def test_export_layout_recognizes_image_and_returns_xlsx() -> None:
     assert response.status_code == 400
 
 
-def test_export_layout_uses_ocr_lines_for_workbook(monkeypatch) -> None:
+def test_export_form_uses_ocr_lines_for_fixed_form_workbook(monkeypatch) -> None:
     from app import main
 
     app.dependency_overrides[get_engine] = lambda: FakeEngine()
     monkeypatch.setattr(main, "_image_size", lambda image_bytes: (240, 320))
     try:
         response = client.post(
-            "/api/export-layout",
+            "/api/export-form",
             files={"file": ("sample.png", b"fake-image", "image/png")},
         )
     finally:
@@ -54,5 +74,7 @@ def test_export_layout_uses_ocr_lines_for_workbook(monkeypatch) -> None:
     assert response.status_code == 200
     assert response.headers["content-type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     workbook = load_workbook(BytesIO(response.content))
-    assert "版式还原" in workbook.sheetnames
-    assert any(cell.value == "中心编号：B260112" for row in workbook["版式还原"].iter_rows() for cell in row)
+    assert workbook.sheetnames == ["现场记录", "OCR明细"]
+    assert workbook["现场记录"]["A1"].value == "变压器短路承受能力试验现场记录"
+    assert workbook["现场记录"]["M2"].value == "B260112"
+    assert workbook["现场记录"]["C3"].value == "山东鲁能泰山电力设备有限公司"

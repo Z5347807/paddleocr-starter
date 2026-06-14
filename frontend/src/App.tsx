@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { exportLayoutWorkbook } from "./api";
+import { exportFormWorkbook } from "./api";
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -36,8 +36,8 @@ export default function App() {
     setBusy(true);
     setStatus("正在识别并生成 Excel");
     try {
-      const blob = await exportLayoutWorkbook(file);
-      downloadBlob(blob, "ocr-layout-result.xlsx");
+      const blob = await exportFormWorkbook(file);
+      downloadBlob(blob, "transformer-test-record.xlsx");
       setStatus("Excel 已生成");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Excel 生成失败");
@@ -50,8 +50,8 @@ export default function App() {
     <main className="app-shell">
       <header className="topbar">
         <div>
-          <h1>PaddleOCR 版式还原 Excel</h1>
-          <p>上传照片，自动生成接近原表单版式的 Excel。</p>
+          <h1>PaddleOCR 表单版 Excel</h1>
+          <p>上传照片，自动生成固定表单版 Excel。</p>
         </div>
       </header>
 
@@ -85,8 +85,8 @@ export default function App() {
           <h2>输出文件</h2>
           <div className="output-list">
             <div>
-              <strong>版式还原</strong>
-              <span>按 OCR 坐标把文字放回接近照片位置的 Excel 网格。</span>
+              <strong>现场记录</strong>
+              <span>按固定表单模板生成 Excel，并把 OCR 结果填入对应单元格。</span>
             </div>
             <div>
               <strong>OCR明细</strong>
@@ -94,7 +94,7 @@ export default function App() {
             </div>
           </div>
           <div className="note">
-            当前流程不要求选择模板，也不进入字段校对页；上传后直接生成 Excel。识别精度仍由 PaddleOCR 模型决定，后续可以继续加表格线检测和自动纠错。
+            当前流程不要求选择模板，也不进入字段校对页；上传后直接生成表单版 Excel。Excel 文件由本地后端代码直接创建，不依赖 Excel 软件、外部模板文件或云端服务。
           </div>
         </section>
       </section>

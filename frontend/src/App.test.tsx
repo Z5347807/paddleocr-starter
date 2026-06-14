@@ -17,9 +17,9 @@ describe("App", () => {
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
   });
 
-  it("uploads an image and directly downloads the layout Excel file", async () => {
+  it("uploads an image and directly downloads the fixed form Excel file", async () => {
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-      expect(url).toBe("/api/export-layout");
+      expect(url).toBe("/api/export-form");
       expect(init?.method).toBe("POST");
       expect(init?.body).toBeInstanceOf(FormData);
       expect((init?.body as FormData).get("file")).toBeInstanceOf(File);
@@ -42,7 +42,7 @@ describe("App", () => {
   it("keeps the page focused on upload and output instead of field editing", async () => {
     render(<App />);
 
-    expect(screen.getByText("上传照片，自动生成接近原表单版式的 Excel。")).toBeInTheDocument();
+    expect(screen.getByText("上传照片，自动生成固定表单版 Excel。")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "生成 Excel" })).toBeDisabled();
     expect(screen.queryByText("关键字段")).not.toBeInTheDocument();
     expect(screen.queryByText("表格结果")).not.toBeInTheDocument();
