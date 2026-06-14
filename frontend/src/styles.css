@@ -66,7 +66,7 @@ button:disabled {
 }
 
 .image-panel,
-.result-panel {
+.output-panel {
   min-height: calc(100vh - 104px);
   padding: 18px;
   background: #ffffff;
@@ -117,92 +117,46 @@ select {
   object-fit: contain;
 }
 
-.tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.tabs button {
-  color: #24313d;
-  background: #edf1f5;
-  border-color: #d8dee6;
-}
-
-.tabs button.active {
-  color: #ffffff;
-  background: #2f6fed;
-  border-color: #2f6fed;
-}
-
-.empty-state {
+.output-panel {
   display: grid;
-  min-height: 320px;
-  place-items: center;
-  color: #667789;
-  border: 1px dashed #c8d0da;
+  align-content: start;
+  gap: 18px;
+}
+
+.output-panel h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.output-list {
+  display: grid;
+  gap: 12px;
+}
+
+.output-list div {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  background: #f6f8fa;
+  border: 1px solid #d8dee6;
   border-radius: 8px;
 }
 
-.field-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 14px;
+.output-list strong {
+  font-size: 16px;
 }
 
-.field-grid label span {
-  display: block;
-  margin-bottom: 6px;
-  font-weight: 700;
+.output-list span,
+.note {
+  color: #50606f;
+  line-height: 1.7;
 }
 
-.table-stack {
-  display: grid;
-  gap: 20px;
-}
-
-.table-stack h2 {
-  margin: 0 0 10px;
-  font-size: 17px;
-}
-
-.table-scroll {
-  overflow-x: auto;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th,
-td {
-  min-width: 120px;
-  border: 1px solid #d8dee6;
-  padding: 6px;
-  text-align: left;
-}
-
-th {
-  background: #edf1f5;
-}
-
-.raw-list {
-  display: grid;
-  gap: 8px;
-  padding-left: 22px;
-}
-
-.raw-list li {
-  padding: 8px 10px;
-  background: #f6f8fa;
+.note {
+  padding: 14px;
   border: 1px solid #d8dee6;
   border-radius: 6px;
-}
-
-.raw-list strong {
-  margin-left: 10px;
-  color: #2f6fed;
+  background: #ffffff;
 }
 
 @media (max-width: 900px) {

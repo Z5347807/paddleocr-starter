@@ -6,6 +6,7 @@ from PIL import Image, UnidentifiedImageError
 
 from app.errors import ApiError, api_error_handler
 from app.exporter import build_workbook
+from app.layout_exporter import build_layout_workbook
 from app.models import RecognitionResult, TemplateInfo
 from app.ocr import OcrEngine, get_ocr_engine
 from app.templates import DEFAULT_TEMPLATE_ID, get_template, template_infos
@@ -38,11 +39,7 @@ def templates() -> list[TemplateInfo]:
     return template_infos()
 
 
-@app.post("/api/recognize", response_model=RecognitionResult)
-async def recognize(
-    file: UploadFile = File(...),
-    templateId: str = Form(DEFAULT_TEMPLATE_ID),
-) -> RecognitionResult:
+def _ensure_supported_image(file: UploadFile) -> None:
     if file.content_type not in SUPPORTED_CONTENT_TYPES:
         raise ApiError(
             400,
@@ -51,15 +48,27 @@ async def recognize(
             file.content_type or "",
         )
 
+
+def _image_size(image_bytes: bytes) -> tuple[int, int]:
+    try:
+        image = Image.open(BytesIO(image_bytes))
+        return image.size
+    except UnidentifiedImageError as exc:
+        raise ApiError(400, "image_decode_failed", "Image cannot be decoded.", str(exc)) from exc
+
+
+@app.post("/api/recognize", response_model=RecognitionResult)
+async def recognize(
+    file: UploadFile = File(...),
+    templateId: str = Form(DEFAULT_TEMPLATE_ID),
+) -> RecognitionResult:
+    _ensure_supported_image(file)
+
     image_bytes = await file.read()
     if len(image_bytes) > MAX_FILE_SIZE:
         raise ApiError(400, "file_too_large", "Image file must be 10MB or smaller.", str(len(image_bytes)))
 
-    try:
-        image = Image.open(BytesIO(image_bytes))
-        width, height = image.size
-    except UnidentifiedImageError as exc:
-        raise ApiError(400, "image_decode_failed", "Image cannot be decoded.", str(exc)) from exc
+    width, height = _image_size(image_bytes)
 
     try:
         template = get_template(templateId)
@@ -91,4 +100,37 @@ def export_excel(result: RecognitionResult) -> Response:
         content=content,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": 'attachment; filename="recognition-result.xlsx"'},
+    )
+
+
+@app.post("/api/export-layout")
+async def export_layout_excel(file: UploadFile = File(...)) -> Response:
+    _ensure_supported_image(file)
+
+    image_bytes = await file.read()
+    if len(image_bytes) > MAX_FILE_SIZE:
+        raise ApiError(400, "file_too_large", "Image file must be 10MB or smaller.", str(len(image_bytes)))
+
+    width, height = _image_size(image_bytes)
+
+    try:
+        engine = resolve_engine()
+        raw_lines = engine.recognize(image_bytes)
+    except Exception as exc:
+        raise ApiError(500, "ocr_failed", "OCR recognition failed.", str(exc)) from exc
+
+    try:
+        content = build_layout_workbook(
+            raw_lines=raw_lines,
+            filename=file.filename or "uploaded-image",
+            image_width=width,
+            image_height=height,
+        )
+    except Exception as exc:
+        raise ApiError(500, "export_failed", "Excel generation failed.", str(exc)) from exc
+
+    return Response(
+        content=content,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="ocr-layout-result.xlsx"'},
     )

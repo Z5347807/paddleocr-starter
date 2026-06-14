@@ -40,3 +40,20 @@ export async function exportWorkbook(result: RecognitionResult): Promise<Blob> {
 
   return response.blob();
 }
+
+export async function exportLayoutWorkbook(file: File): Promise<Blob> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch("/api/export-layout", {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.error?.message ?? "Excel 生成失败");
+  }
+
+  return response.blob();
+}

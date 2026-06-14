@@ -1,18 +1,24 @@
 # PaddleOCR Starter
 
-Local web app for recognizing photographed transformer short-circuit test record forms and exporting corrected recognition results to Excel.
+Local web app for recognizing photographed forms with PaddleOCR and exporting an Excel workbook that keeps OCR text close to its original image layout.
 
 ## Scope
 
-Version 1 targets the fixed form type `变压器短路承受能力试验现场记录`.
+Version 1 focuses on upload-to-Excel layout reconstruction for the test form photo.
 
 The workflow is:
 
 1. Open the local web page.
 2. Upload a form photo.
 3. Run OCR through the local FastAPI backend.
-4. Review and edit key fields and table values.
-5. Export an `.xlsx` workbook.
+4. Download an `.xlsx` workbook directly.
+
+The exported workbook contains:
+
+- `版式还原`: OCR text placed into an Excel grid according to image coordinates.
+- `OCR明细`: recognized text, confidence, and source box coordinates.
+
+The older structured template endpoints are still available for iteration, but the default UI now uses the direct layout export flow.
 
 ## Backend
 
@@ -54,6 +60,7 @@ npm run build
 - `GET /api/templates`
 - `POST /api/recognize`
 - `POST /api/export`
+- `POST /api/export-layout`
 
 ## Notes
 
@@ -62,3 +69,4 @@ PaddleOCR model loading can take time on the first recognition request. Automate
 ## Manual Verification
 
 - 2026-06-14: Uploaded the sample transformer test record photo locally, reviewed recognized fields, edited `中心编号` to `B260113`, exported Excel, and confirmed the edited value appeared in workbook sheets `识别结果` and `关键字段`.
+- 2026-06-14: Switched the default web flow to upload-to-layout-Excel export and verified the backend route generates a workbook from OCR lines.
