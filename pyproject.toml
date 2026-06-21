@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "paddleocr-starter"
+version = "0.1.0"
+description = "A small PaddleOCR CLI and FastAPI starter project."
+readme = "README.md"
+requires-python = ">=3.9,<3.14"
+dependencies = [
+  "paddlepaddle>=3.1.0",
+  "paddleocr>=3.7.0",
+  "fastapi>=0.115.0",
+  "uvicorn[standard]>=0.30.0",
+  "python-multipart>=0.0.9",
+  "Pillow>=10.0.0",
+]
+
+[project.scripts]
+paddleocr-starter = "paddleocr_starter.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
